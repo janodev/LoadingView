@@ -1,35 +1,44 @@
 import Combine
+import OSLog
 import SwiftUI
 
-final class LoadingViewModel<L: Loadable>: ObservableObject {
-    private var loader: DebouncingLoadable<L>
+@MainActor
+@Observable
+final class LoadingViewModel<L: Loadable & Sendable>: Sendable {
+    private let logger = Logger(subsystem: "loadingview", category: "LoadingViewModel")
+    private var loader: L
     private var cancellables = Set<AnyCancellable>()
-    @Published var loadingState: LoadingState<L.Value> = .idle
+    var loadingState: LoadingState<L.Value> = .loading(nil)
 
-    init(loader: L) {
-        self.loader = DebouncingLoadable(wrapping: loader)
+    @MainActor init(loader: L) {
+        self.loader = loader
 
         // subscribe to loader’s state updates
         loader.state
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
+                self?.logger.debug("state: \(state)")
                 self?.loadingState = state
+                if case .loading(let progress) = state, progress?.isCancelled == true {
+                    self?.loader.isCancelled = true
+                }
             }
             .store(in: &cancellables)
     }
 
     func load() async {
-        await loader.load()
+        loader.load()
     }
 }
 
-// LoadingView displaying the loading state
+/// Renders loading states.
+@MainActor
 public struct LoadingView<L: Loadable, Content: View>: View {
-    @StateObject private var viewModel: LoadingViewModel<L>
+    @State private var viewModel: LoadingViewModel<L>
     private var content: (L.Value) -> Content
 
     public init(loader: L, @ViewBuilder content: @escaping (L.Value) -> Content) {
-        self._viewModel = StateObject(wrappedValue: LoadingViewModel(loader: loader))
+        self._viewModel = State(wrappedValue: LoadingViewModel(loader: loader))
         self.content = content
     }
 
@@ -39,12 +48,27 @@ public struct LoadingView<L: Loadable, Content: View>: View {
         EmptyView()
     }
 
-    private var _progressView: () -> any View = {
-        ProgressView()
+    private var _progressView: (Progress?) -> any View = { progress in
+        VStack {
+            ProgressView()
+            VStack {
+                if let percent = progress?.percent {
+                    Text("\(percent)%")
+                }
+                if let message = progress?.message {
+                    Text(message)
+                }
+                if let isCancelled = progress?.isCancelled, isCancelled {
+                    Text("Loading cancelled.")
+                }
+            }
+        }
     }
 
     private var _errorView: (Error) -> any View = { error in
-        Text("Error: \(error.localizedDescription)")
+        Text(".Error: \(error.localizedDescription)")
+            .accessibilityLabel(".An error occurred")
+            .accessibilityValue(error.localizedDescription)
     }
 
     public func emptyView(@ViewBuilder _ view: @escaping () -> any View) -> Self {
@@ -53,7 +77,7 @@ public struct LoadingView<L: Loadable, Content: View>: View {
         return copy
     }
 
-    public func progressView(@ViewBuilder _ view: @escaping () -> any View) -> Self {
+    public func progressView(@ViewBuilder _ view: @escaping (Progress?) -> any View) -> Self {
         var copy: Self = self
         copy._progressView = view
         return copy
@@ -71,8 +95,8 @@ public struct LoadingView<L: Loadable, Content: View>: View {
         switch viewModel.loadingState {
         case .idle:
             AnyView(_emptyView())
-        case .loading:
-            AnyView(_progressView())
+        case .loading(let progress):
+            AnyView(_progressView(progress))
                 .task {
                     await viewModel.load()
                 }

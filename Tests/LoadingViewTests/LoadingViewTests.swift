@@ -1,12 +1,21 @@
 import XCTest
 @testable import LoadingView
 
-final class LoadingViewTests: XCTestCase {
-    func testExample() throws {
-        // XCTest Documentation
-        // https://developer.apple.com/documentation/xctest
-
-        // Defining Test Cases and Test Methods
-        // https://developer.apple.com/documentation/xctest/defining_test_cases_and_test_methods
+struct CustomError: Error, LocalizedError {
+    var errorDescription: String? {
+        return "Custom error occurred"
     }
 }
+
+final class LoadingStateTests: XCTestCase {
+    func testErrorStateOutputsLocalizedDescription() {
+        let error = CustomError()
+        let loadingState: LoadingState<String> = .error(error)
+        XCTAssertEqual(
+            loadingState.description,
+            "Custom error occurred",
+            "The description of the error state should output the localized description of the custom error"
+        )
+    }
+}
+
