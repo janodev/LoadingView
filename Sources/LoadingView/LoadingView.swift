@@ -107,7 +107,7 @@ public struct LoadingView<L: Loadable & Sendable, Content: View>: View {
                 }
         case .loaded(let value):
             content(value)
-        case .error(let error):
+        case .failure(let error):
             AnyView(_errorView(error))
         }
     }

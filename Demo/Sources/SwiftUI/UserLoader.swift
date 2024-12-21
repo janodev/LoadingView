@@ -55,7 +55,7 @@ final class UserLoader: Loadable, Sendable {
             guard !isCancelled else {
                 return // client cancelled, skip sending an error
             }
-            continuation.yield(.error(error))
+            continuation.yield(.failure(error))
         }
     }
 

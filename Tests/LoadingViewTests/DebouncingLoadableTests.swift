@@ -3,20 +3,23 @@ import Combine
 import XCTest
 
 private final class MockLoadable: Loadable {
+    var state: any AsyncSequence<LoadingState<Int>, Never>
     typealias Value = Int
     var isCancelled = false
 
     private var continuation: AsyncStream<LoadingState<Int>>.Continuation
-    let state: AsyncStream<LoadingState<Int>>
+    let internalStream: AsyncStream<LoadingState<Int>>
 
     var loadCallCount = 0
 
     init() {
         var localContinuation: AsyncStream<LoadingState<Int>>.Continuation!
-        self.state = AsyncStream<LoadingState<Int>> { continuation in
+        let internalStream = AsyncStream<LoadingState<Int>> { continuation in
             localContinuation = continuation
         }
         self.continuation = localContinuation
+        self.internalStream = internalStream
+        self.state = internalStream
     }
 
     // Updated to async since the Loadable protocol now requires await usage.

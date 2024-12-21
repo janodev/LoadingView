@@ -18,7 +18,7 @@ public enum LoadingState<Value: Sendable>: Sendable, Equatable, CustomStringConv
     /// A loading operation is in progress.
     case loading(Progress?)
     /// A loading operation finished with error.
-    case error(Error)
+    case failure(Error)
     /// A loading operation completed successfully.
     case loaded(Value)
 
@@ -27,7 +27,7 @@ public enum LoadingState<Value: Sendable>: Sendable, Equatable, CustomStringConv
         switch (lhs, rhs) {
         case (.idle, .idle): return true
         case (.loading(let progress1), .loading(let progress2)): return progress1 == progress2
-        case (.error, .error): return true
+        case (.failure, .failure): return true
         case (.loaded, .loaded): return true
         default: return false
         }
@@ -37,7 +37,7 @@ public enum LoadingState<Value: Sendable>: Sendable, Equatable, CustomStringConv
         switch self {
         case .idle: return ".idle"
         case .loading(let progress): return ".loading percent: \(progress?.percent?.description ?? ""), message: \(progress?.message ?? "")"
-        case .error(let error):
+        case .failure(let error):
             return error.localizedDescription
         case .loaded(let value):
             var string = ""

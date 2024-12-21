@@ -10,7 +10,7 @@ struct CustomError: Error, LocalizedError {
 final class LoadingStateTests: XCTestCase {
     func testErrorStateOutputsLocalizedDescription() {
         let error = CustomError()
-        let loadingState: LoadingState<String> = .error(error)
+        let loadingState: LoadingState<String> = .failure(error)
         XCTAssertEqual(
             loadingState.description,
             "Custom error occurred",
