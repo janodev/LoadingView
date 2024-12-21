@@ -1,5 +1,6 @@
 import OSLog
 import SwiftUI
+import AsyncAlgorithms
 
 // workaround for compiler crashing with 'isolated deinit' in toolchain 6.1
 private final class TaskHolder {
@@ -31,7 +32,7 @@ final class LoadingViewModel<L: Loadable & Sendable>: Sendable {
     }
 
     func load() async {
-        loader.load()
+        await loader.load()
     }
 }
 

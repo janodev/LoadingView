@@ -21,5 +21,5 @@ public protocol Loadable {
     /// Typically you will send a `.loading` state through the `state`
     /// publisher, then attempt to load the `Value` and publish either
     /// a `.loaded(value)` or an `.error(error)`.
-    func load()
+    func load() async
 }

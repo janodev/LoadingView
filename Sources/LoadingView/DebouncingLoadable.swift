@@ -8,12 +8,10 @@ import Foundation
 @MainActor
 public class DebouncingLoadable<LoadableObject: Loadable>: Loadable, Sendable {
     public typealias Value = LoadableObject.Value
+    public var isCancelled = false
 
-    // AsyncStream replacing PassthroughSubject
     public let state: AsyncStream<LoadingState<Value>>
     private let continuation: AsyncStream<LoadingState<Value>>.Continuation
-
-    public var isCancelled = false
 
     private var loadable: LoadableObject
     private var debounceIntervalNanoseconds: UInt64
@@ -34,19 +32,16 @@ public class DebouncingLoadable<LoadableObject: Loadable>: Loadable, Sendable {
         self.debounceIntervalNanoseconds = UInt64(debounceInterval * 1_000_000_000)
         self.executeFirstImmediately = executeFirstImmediately
 
-        var continuation: AsyncStream<LoadingState<Value>>.Continuation!
+        var localContinuation: AsyncStream<LoadingState<Value>>.Continuation!
         self.state = AsyncStream { cont in
-            continuation = cont
-            cont.onTermination = { @Sendable _ in
-
-            }
+            localContinuation = cont
         }
-        self.continuation = continuation
+        self.continuation = localContinuation
 
         // Start listening to wrapped loadable's state
-        stateTask = Task { [weak self] in
+        stateTask = Task {
             for await state in wrapping.state {
-                self?.continuation.yield(state)
+                continuation.yield(state)
             }
         }
     }
@@ -58,20 +53,18 @@ public class DebouncingLoadable<LoadableObject: Loadable>: Loadable, Sendable {
     }
 
     /// Initiates the loading process, applying debouncing rules based on initialization parameters.
-    public func load() {
+    public func load() async {
         if executeFirstImmediately && isIntervalElapsedWithoutCalls {
             isIntervalElapsedWithoutCalls = false
-            Task {
-                await executeLoad()
-            }
+            await executeLoad()
         } else {
-            debounceLoad()
+            await debounceLoad()
         }
     }
 
     /// Executes the load operation on the underlying LoadableObject.
     private func executeLoad() async {
-        loadable.load()
+        await loadable.load()
         debounceTask = Task {
             try? await Task.sleep(nanoseconds: debounceIntervalNanoseconds)
             isIntervalElapsedWithoutCalls = true
@@ -79,15 +72,13 @@ public class DebouncingLoadable<LoadableObject: Loadable>: Loadable, Sendable {
     }
 
     /// Debounces the load operation, ensuring only one operation is triggered after quick consecutive calls.
-    private func debounceLoad() {
+    private func debounceLoad() async {
         debounceTask?.cancel()
         debounceTask = Task {
             try? await Task.sleep(nanoseconds: debounceIntervalNanoseconds)
             guard !Task.isCancelled else { return }
             isIntervalElapsedWithoutCalls = false
-            Task {
-                await executeLoad()
-            }
+            await executeLoad()
         }
     }
 }
