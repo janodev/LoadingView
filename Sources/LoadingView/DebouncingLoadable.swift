@@ -10,7 +10,7 @@ public class DebouncingLoadable<LoadableObject: Loadable>: Loadable, Sendable {
     public typealias Value = LoadableObject.Value
     public var isCancelled = false
 
-    public let state: AsyncStream<LoadingState<Value>>
+    public var state: any AsyncSequence<LoadingState<LoadableObject.Value>, Never>
     private let continuation: AsyncStream<LoadingState<Value>>.Continuation
 
     private var loadable: LoadableObject

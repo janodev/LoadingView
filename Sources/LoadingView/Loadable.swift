@@ -11,7 +11,7 @@ public protocol Loadable {
     associatedtype Value: Sendable
 
     /// Publisher for the loading state of the `Value`.
-    var state: AsyncStream<LoadingState<Value>> { get }
+    var state: any AsyncSequence<LoadingState<Value>, Never> { get }
 
     /// Flag that allows the user to cancel the loading operation.
     var isCancelled: Bool { get set }

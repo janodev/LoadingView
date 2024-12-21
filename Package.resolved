@@ -1,0 +1,24 @@
+{
+  "originHash" : "322b78890254905dfdac709361bb198eca57bd67287f9bb008552cfad6d7b490",
+  "pins" : [
+    {
+      "identity" : "swift-async-algorithms",
+      "kind" : "remoteSourceControl",
+      "location" : "git@github.com:apple/swift-async-algorithms.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "4c3ea81f81f0a25d0470188459c6d4bf20cf2f97"
+      }
+    },
+    {
+      "identity" : "swift-collections",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-collections.git",
+      "state" : {
+        "revision" : "671108c96644956dddcd89dd59c203dcdb36cec7",
+        "version" : "1.1.4"
+      }
+    }
+  ],
+  "version" : 3
+}
