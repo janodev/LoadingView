@@ -4,6 +4,7 @@ nonisolated(unsafe) let project = Project(
     name: "LoadingViewDemo",
     packages: [
         .package(path: "..")
+        .package(
     ],
     settings: .settings(base: [
         "SWIFT_VERSION": "6.0",

@@ -7,21 +7,19 @@ import Foundation
 /// amount of time has passed without any new events being triggered.
 @MainActor
 public class DebouncingLoadable<LoadableObject: Loadable>: Loadable, Sendable {
-    // MARK: - Loadable
     public typealias Value = LoadableObject.Value
-    public var state = PassthroughSubject<LoadingState<Value>, Never>()
+
+    // AsyncStream replacing PassthroughSubject
+    public let state: AsyncStream<LoadingState<Value>>
+    private let continuation: AsyncStream<LoadingState<Value>>.Continuation
+
     public var isCancelled = false
 
-    // MARK: -
     private var loadable: LoadableObject
-    private var cancellables = Set<AnyCancellable>()
     private var debounceIntervalNanoseconds: UInt64
-    private var debounceTask: Task<Void, Never>? = nil
-
-    // true when an interval elapses without receiving load calls
+    private var debounceTask: Task<Void, Never>?
+    private var stateTask: Task<Void, Never>?
     private var isIntervalElapsedWithoutCalls = true
-
-    // true to execute the first call immedately when an interval elapses without receiving load calls
     private var executeFirstImmediately: Bool
 
     /// Initializes a new instance of the DebouncingLoadable.
@@ -29,18 +27,34 @@ public class DebouncingLoadable<LoadableObject: Loadable>: Loadable, Sendable {
     ///   - wrapping: The underlying loadable object.
     ///   - debounceInterval: The interval to debounce load calls, default is 0.3 seconds.
     ///   - executeFirstImmediately: If true, executes the first load call immediately.
-    public init(wrapping: LoadableObject, debounceInterval: TimeInterval = 0.3, executeFirstImmediately: Bool = false) async {
+    public init(wrapping: LoadableObject,
+                debounceInterval: TimeInterval = 0.3,
+                executeFirstImmediately: Bool = false) async {
         self.loadable = wrapping
         self.debounceIntervalNanoseconds = UInt64(debounceInterval * 1_000_000_000)
         self.executeFirstImmediately = executeFirstImmediately
 
-        // subscribe to the wrapped loadable and forward calls
-        wrapping.state
-            .receive(on: RunLoop.main)
-            .sink { [weak self] state in
-                self?.state.send(state)
+        var continuation: AsyncStream<LoadingState<Value>>.Continuation!
+        self.state = AsyncStream { cont in
+            continuation = cont
+            cont.onTermination = { @Sendable _ in
+
             }
-            .store(in: &cancellables)
+        }
+        self.continuation = continuation
+
+        // Start listening to wrapped loadable's state
+        stateTask = Task { [weak self] in
+            for await state in wrapping.state {
+                self?.continuation.yield(state)
+            }
+        }
+    }
+
+    deinit {
+        stateTask?.cancel()
+        debounceTask?.cancel()
+        continuation.finish()
     }
 
     /// Initiates the loading process, applying debouncing rules based on initialization parameters.

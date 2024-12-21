@@ -1,29 +1,33 @@
-import Combine
 import OSLog
 import SwiftUI
+
+// workaround for compiler crashing with 'isolated deinit' in toolchain 6.1
+private final class TaskHolder {
+    var task: Task<Void, Never>?
+    deinit {
+        task?.cancel()
+    }
+}
 
 @MainActor
 @Observable
 final class LoadingViewModel<L: Loadable & Sendable>: Sendable {
     private let logger = Logger(subsystem: "loadingview", category: "LoadingViewModel")
     private var loader: L
-    private var cancellables = Set<AnyCancellable>()
     var loadingState: LoadingState<L.Value> = .loading(nil)
+    private let taskHolder = TaskHolder()
 
     @MainActor init(loader: L) {
         self.loader = loader
-
-        // subscribe to loader’s state updates
-        loader.state
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] state in
+        taskHolder.task = Task { [weak self] in
+            for await state in loader.state {
                 self?.logger.debug("state: \(state)")
                 self?.loadingState = state
                 if case .loading(let progress) = state, progress?.isCancelled == true {
                     self?.loader.isCancelled = true
                 }
             }
-            .store(in: &cancellables)
+        }
     }
 
     func load() async {
@@ -33,7 +37,7 @@ final class LoadingViewModel<L: Loadable & Sendable>: Sendable {
 
 /// Renders loading states.
 @MainActor
-public struct LoadingView<L: Loadable, Content: View>: View {
+public struct LoadingView<L: Loadable & Sendable, Content: View>: View {
     @State private var viewModel: LoadingViewModel<L>
     private var content: (L.Value) -> Content
 

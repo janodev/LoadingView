@@ -1,12 +1,11 @@
-// swift-tools-version: 5.10
-
+// swift-tools-version: 6.0
 import PackageDescription
 
 let package = Package(
     name: "LoadingView",
     platforms: [
-        .iOS(.v17),
-        .macOS(.v14)
+        .iOS(.v18),
+        .macOS(.v15)
     ],
     products: [
         .library(
@@ -15,7 +14,8 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "LoadingView"),
+            name: "LoadingView"
+        ),
         .testTarget(
             name: "LoadingViewTests",
             dependencies: ["LoadingView"]),

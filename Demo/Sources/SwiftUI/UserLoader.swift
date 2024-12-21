@@ -1,37 +1,40 @@
-import Combine
+import Foundation
 import LoadingView
+import SwiftUI
 
-struct User {}
+struct User: Sendable {}
 
 @MainActor
 final class UserLoader: Loadable, Sendable {
-    var isCancelled: Bool {
-        get { false }
-        set {}
-    }
-
     typealias Value = User
 
-    let state = PassthroughSubject<LoadingState<User>, Never>()
+    var isCancelled: Bool = false
+
+    private var continuation: AsyncStream<LoadingState<User>>.Continuation!
+    lazy var state: AsyncStream<LoadingState<User>> = {
+        AsyncStream { continuation in
+            self.continuation = continuation
+            continuation.onTermination = { @Sendable _ in
+                // handle termination (not really needed in this example)
+            }
+        }
+    }()
 
     func load() {
-        state.send(.loading(Progress()))
-        Task {
+        continuation.yield(.loading(Progress()))
+
+        Task { @MainActor in
             do {
                 let userData = try await fetchUser()
-                await MainActor.run {
-                    state.send(.loaded(userData))
-                }
+                _ = continuation.yield(.loaded(userData))
             } catch {
-                await MainActor.run {
-                    state.send(.error(error))
-                }
+                _ = continuation.yield(.error(error))
             }
         }
     }
 
     private func fetchUser() async throws -> User {
-        // simulate API call
+        // Simulate a network call
         try await Task.sleep(nanoseconds: 1_000_000_000)
         return User()
     }
