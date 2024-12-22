@@ -7,8 +7,7 @@ struct User: Sendable {}
 @MainActor
 final class UserLoader: Loadable, Sendable {
     // MARK: - Loadable
-    typealias Value = User
-    public var isCancelled: Bool = false
+    public var isCancelled = false
     public var state: any AsyncSequence<LoadingState<User>, Never>
 
     // `state` implementation

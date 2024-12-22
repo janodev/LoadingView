@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 55;
+	objectVersion = 56;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -503,10 +503,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = dev.janodev.loadingview;
 				PRODUCT_NAME = LoadingViewDemo;
 				SDKROOT = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = (
-					"$(inherited)",
-					DEBUG,
-				);
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
 				SWIFT_COMPILATION_MODE = singlefile;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -526,10 +523,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = dev.janodev.loadingview.tests;
 				PRODUCT_NAME = LoadingViewDemoTests;
 				SDKROOT = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = (
-					"$(inherited)",
-					DEBUG,
-				);
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
 				SWIFT_COMPILATION_MODE = singlefile;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LoadingViewDemo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LoadingViewDemo";

@@ -5,6 +5,10 @@ import Foundation
 ///
 /// Debounce delays the execution of the operation until a certain 
 /// amount of time has passed without any new events being triggered.
+///
+/// Once the internal loadable is called, it is free to emit states in quick
+/// succession. That’s fine, we want to debounce user actions, not the view’s
+/// loading progress.
 @MainActor
 public class DebouncingLoadable<LoadableObject: Loadable>: Loadable, Sendable {
     public typealias Value = LoadableObject.Value
