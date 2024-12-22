@@ -1,5 +1,4 @@
 @testable import LoadingView
-import Combine
 import XCTest
 
 private final class MockLoadable: Loadable {
